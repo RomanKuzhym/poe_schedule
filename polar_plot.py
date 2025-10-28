@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+from poe_parse import LINES, SUBLINES
+
 def plot12hours(ax, schedule, title='', timeinit=0):
 
     # Set the direction of the polar plot (0 at the top)
@@ -25,10 +27,11 @@ def plot12hours(ax, schedule, title='', timeinit=0):
     ax.get_yaxis().set_visible(False)
     plt.draw()
 
-def show_schedule(qu_num, raw_sched):
+def show_schedule(line, subline, raw_sched):
+    idx = line * SUBLINES + subline
     plt.rcParams.update({'font.size': 8})
     fig, ax = plt.subplots(1, 2, subplot_kw={'projection': 'polar'})
-
-    plot12hours(ax[0], raw_sched[qu_num][:24], f"{qu_num + 1} черга відключення з 00:00 по 12:00")
-    plot12hours(ax[1], raw_sched[qu_num][24:], f"{qu_num + 1} черга відключення з 12:00 по 24:00", 12)
+    fig.suptitle(f"{line + 1} черга {subline+1} підчерга")
+    plot12hours(ax[0], raw_sched[idx][:24], "00:00 - 12:00")
+    plot12hours(ax[1], raw_sched[idx][24:], "12:00 - 24:00", 12)
     plt.show()
