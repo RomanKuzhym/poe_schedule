@@ -25,17 +25,21 @@ def get_ranges(raw_sched):
             if prevstep == PowerState.On and timestep in (PowerState.Off, PowerState.Switch):
                 rangestart = i * 0.5
                 prevstep = PowerState.Off
-            elif prevstep in (PowerState.Off, PowerState.Switch) and timestep == PowerState.On:
+            # Switches on usually at switching time
+            elif prevstep == PowerState.Off and timestep in (PowerState.On, PowerState.Switch):
                 rangestop = i * 0.5
                 prevstep = PowerState.On
                 rg.append([rangestart, rangestop])
+        # off until 24:00
+        if prevstep == PowerState.Off:
+            rg.append([rangestart, 24])
 
         ranges.append(rg)
 
     return ranges
 
 def main():
-    date = datetime.datetime.now().date()# + datetime.timedelta(days=1)
+    date = datetime.datetime.now().date() + datetime.timedelta(days=0)
     try:
         fetch_schedule_html(date)
     except:
@@ -57,9 +61,9 @@ def main():
             for series in r:
                 h_from, min_from = divmod(series[0], 1)
                 h_to, min_to = divmod(series[1], 1)
-                td_from = datetime.timedelta(hours=h_from, minutes=60*min_from)
-                td_to = datetime.timedelta(hours=h_to, minutes=60*min_to)
-                print(f"      {td_from} - {td_to}")
+                #td_from = datetime.timedelta(hours=h_from, minutes=60*min_from)
+                #td_to = datetime.timedelta(hours=h_to, minutes=60*min_to)
+                print(f"      {h_from:02.0f}:{60 * min_from:02.0f} - {h_to:02.0f}:{60 * min_to:02.0f}")
 
 
     polar_plot.show_schedule(1, 1, raw_data)
