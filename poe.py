@@ -66,14 +66,43 @@ def print_lines(ranges, line_num=-1, subline_num=-1):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--line", type=int, choices=range(1, LINES+1))
-    parser.add_argument("--subline", type=int, choices=range(1, SUBLINES+1))
-    parser.add_argument("--date", type=lambda s: datetime.datetime.strptime(s, '%Y-%m-%d'), default=datetime.datetime.now().date())
-    parser.add_argument("--inverted", action='store_true', default=False)
-    parser.add_argument("--show_plot", action='store_true', default=False)
-    parser.add_argument("--tomorrow", action='store_true', default=False)
+    parser.add_argument(
+        "--line", 
+        help="Номер черги",
+        type=int, 
+        choices=range(1, LINES+1)
+    )
+    parser.add_argument(
+        "--subline", 
+        help="Номер підчерги",
+        type=int, 
+        choices=range(1, SUBLINES+1))
+    parser.add_argument(
+        "--date", 
+        help="Дата РРРР-ММ-ДД",
+        type=lambda s: datetime.datetime.strptime(s, '%Y-%m-%d'), 
+        default=datetime.datetime.now().date())
+    parser.add_argument(
+        "--inverted", 
+        help="Показувати графік увімкнення", 
+        action='store_true',
+        default=False)
+    parser.add_argument(
+        "--show_plot", 
+        help="Діаграма", 
+        action='store_true',
+        default=False)
+    parser.add_argument(
+        "--tomorrow",
+        help="Графік на завтра від заданої дати",
+        action='store_true',
+        default=False)
 
     args = parser.parse_args()
+
+    if args.help:
+        parser.print_help()
+        return
  
     sel_line = -1
     sel_subline = -1
