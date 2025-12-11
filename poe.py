@@ -19,28 +19,19 @@ def fetch_schedule_html(date) -> str:
     return resp.text
 
 
-def get_ranges(raw_sched):
-    sched = copy.deepcopy(raw_sched)
-    # Consider the Switch->On state as an On->On state
-    # and Switch->Off as an Off->Off
-    for qu in sched:
-        for i in range(len(qu)-1):
-            if qu[i] == PowerState.Switch and qu[i+1] != PowerState.Switch:
-                qu[i] = qu[i+1]
-
+def get_ranges(sched):
     ranges = []
     for qu in range (LINES * SUBLINES):
         prevstep = sched[qu][0]
         rangestart = 0
         rg = []
         for i, timestep in enumerate(sched[qu]):
-            if prevstep == PowerState.On and timestep in (PowerState.Off, PowerState.Switch):
+            if prevstep == PowerState.On and timestep == PowerState.Off:
                 rangestart = i * 0.5
                 prevstep = PowerState.Off
-            # Switches on usually at switching time
-            elif prevstep == PowerState.Off and timestep in (PowerState.On, PowerState.Switch):
-                rangestop = i * 0.5
+            elif prevstep == PowerState.Off and timestep == PowerState.On:
                 prevstep = PowerState.On
+                rangestop = i * 0.5
                 rg.append([rangestart, rangestop])
         # off until 24:00
         if prevstep == PowerState.Off:
@@ -78,6 +69,7 @@ def main():
     parser.add_argument("--line", type=int, choices=range(1, LINES+1))
     parser.add_argument("--subline", type=int, choices=range(1, SUBLINES+1))
     parser.add_argument("--date", type=lambda s: datetime.datetime.strptime(s, '%Y-%m-%d'), default=datetime.datetime.now().date())
+    parser.add_argument("--inverted", action='store_true', default=False)
     parser.add_argument("--show_plot", action='store_true', default=False)
     parser.add_argument("--tomorrow", action='store_true', default=False)
 
@@ -102,7 +94,24 @@ def main():
             print(text)
         return
 
-    ranges = get_ranges(raw_data)
+    sched = copy.deepcopy(raw_data)
+    # Accept the Switch->On state as an On->On state
+    # and Switch->Off as an Off->Off
+    # Consider only one Switch state in between On/Off states
+    for qu in sched:
+        for i in range(len(qu)-1):
+            if qu[i] == PowerState.Switch and qu[i+1] != PowerState.Switch:
+                qu[i] = qu[i+1]
+
+    if args.inverted:
+        def invert_state(s):
+            return {
+                PowerState.On: PowerState.Off,
+                PowerState.Off: PowerState.On, 
+                PowerState.Switch: PowerState.Switch}[s]
+        sched = [[invert_state(v) for v in qu] for qu in sched]
+
+    ranges = get_ranges(sched)
 
     print (f"Відключення електроенергії за {date}")
     with IndentPrint():
