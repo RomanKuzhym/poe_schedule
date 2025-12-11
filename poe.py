@@ -1,6 +1,8 @@
-import requests
-import datetime
 import argparse
+import copy
+import datetime
+import requests
+
 import polar_plot
 from poe_parse import PowerState, LINES, SUBLINES, parse as parse_schedule
 from indentprint import IndentPrint
@@ -18,12 +20,20 @@ def fetch_schedule_html(date) -> str:
 
 
 def get_ranges(raw_sched):
+    sched = copy.deepcopy(raw_sched)
+    # Consider the Switch->On state as an On->On state
+    # and Switch->Off as an Off->Off
+    for qu in sched:
+        for i in range(len(qu)-1):
+            if qu[i] == PowerState.Switch and qu[i+1] != PowerState.Switch:
+                qu[i] = qu[i+1]
+
     ranges = []
     for qu in range (LINES * SUBLINES):
-        prevstep = PowerState.On
+        prevstep = sched[qu][0]
         rangestart = 0
         rg = []
-        for i, timestep in enumerate(raw_sched[qu]):
+        for i, timestep in enumerate(sched[qu]):
             if prevstep == PowerState.On and timestep in (PowerState.Off, PowerState.Switch):
                 rangestart = i * 0.5
                 prevstep = PowerState.Off
