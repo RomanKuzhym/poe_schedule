@@ -3,6 +3,23 @@ import datetime
 import polar_plot
 import poe_parse
 from poe_parse import PowerState, LINES, SUBLINES
+import argparse
+
+
+##########################################
+## to tabprint.py
+import builtins
+
+class IndentPrint:
+    def __init__(self, count = 1, placeholder = "  "):
+        self._indent_ = placeholder * count
+        self._print_ = print
+    def __enter__(self):
+        builtins.print = lambda *a, **k: self._print_(self._indent_, *a, **k)
+
+    def __exit__(self, *exc):
+        builtins.print = self._print_
+##########################################
 
 def fetch_schedule_html(date) -> str:
     URL = "https://www.poe.pl.ua/customs/newgpv-info.php"
@@ -38,35 +55,62 @@ def get_ranges(raw_sched):
 
     return ranges
 
+
+def print_schedule(ranges):
+    """Print one schedule for a subline.
+    Args:
+        ranges (list[list[int]]): list of pairs of floats from 0 to 24 
+            (outage start and stop respectively).
+    """
+    for r in ranges:
+        (h_from, m_from), (h_to, m_to) = divmod(r[0], 1), divmod(r[1], 1)
+        print(f"{h_from:02.0f}:{60 * m_from:02.0f} - {h_to:02.0f}:{60 * m_to:02.0f}")
+
+def print_lines(ranges, line_num=-1, subline_num=-1):
+    selected_lines = [*range(0, LINES)] if line_num == -1 else [line_num]
+    selected_sublines = [*range(0, SUBLINES)] if subline_num == -1 else [subline_num]
+
+    for i in selected_lines:
+        for j in selected_sublines:
+            print(f"{i+1} черга {j+1} підчерга:")
+            with IndentPrint():
+                print_schedule(ranges[i*SUBLINES + j])
+
 def main():
-    date = datetime.datetime.now().date() + datetime.timedelta(days=0)
     try:
-        fetch_schedule_html(date)
+       date = datetime.datetime.now().date() + datetime.timedelta(days=0)
+       fetch_schedule_html(date)
     except:
         print("Не вдалося завантажити дані")
         return
 
-    print (f"Відключення електроенергії за {date}")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--line", type=int, choices=range(1, LINES+1))
+    parser.add_argument("--subline", type=int, choices=range(1, SUBLINES+1))
+    parser.add_argument("--show_plot", action='store_true', default=False)
+
+    args = parser.parse_args()
+ 
     raw_data = poe_parse.parse(fetch_schedule_html(date))
-    #for q in raw_data:
-    #    print(q)
     ranges = get_ranges(raw_data)
 
-    subline_idx = lambda i,j: i * SUBLINES + j
-    for i in range(LINES):
-        print(f"{i+1} черга:")
-        for j in range(SUBLINES):
-            print(f"   {j+1} підчерга:")
-            r = ranges[subline_idx(i,j)]
-            for series in r:
-                h_from, min_from = divmod(series[0], 1)
-                h_to, min_to = divmod(series[1], 1)
-                #td_from = datetime.timedelta(hours=h_from, minutes=60*min_from)
-                #td_to = datetime.timedelta(hours=h_to, minutes=60*min_to)
-                print(f"      {h_from:02.0f}:{60 * min_from:02.0f} - {h_to:02.0f}:{60 * min_to:02.0f}")
+    print (f"Відключення електроенергії за {date}")
+    with IndentPrint():
+        sel_line = -1
+        sel_subline = -1
+        if args.line is not None:
+            sel_line = args.line - 1
+        if args.subline  is not None:
+            sel_subline = args.subline - 1
+        print_lines(ranges, sel_line, sel_subline)
 
+    if args.show_plot:
+        if args.subline is None or args.line is None:
+            raise Exception("To show a plot specify line and subline numbers")
+        line = args.line - 1
+        subline = args.subline - 1
+        polar_plot.show_schedule(line, subline, raw_data)
 
-    polar_plot.show_schedule(1, 1, raw_data)
 
 if __name__ == '__main__':
     main()
