@@ -99,10 +99,6 @@ def main():
         default=False)
 
     args = parser.parse_args()
-
-    if args.help:
-        parser.print_help()
-        return
  
     sel_line = -1
     sel_subline = -1
@@ -115,9 +111,13 @@ def main():
         date += datetime.timedelta(days=1)
     try:
        text = fetch_schedule_html(date)
-       raw_data = parse_schedule(text)
     except Exception as e:
-        print("Не вдалося завантажити дані")
+        print(f"Не вдалося завантажити дані: {e}")
+        return
+    try:
+        raw_data = parse_schedule(text)
+    except Exception as e:
+        print("Помилка обробки даних")
         with IndentPrint():
             print(e)
             print(text)
