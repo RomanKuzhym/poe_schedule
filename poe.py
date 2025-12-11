@@ -42,29 +42,51 @@ def get_ranges(sched):
     return ranges
 
 
-def print_schedule(ranges):
+def print_time_ranges(time_ranges):
     """Print one schedule for a subline.
     Args:
-        ranges (list[list[int]]): list of pairs of floats from 0 to 24 
+        time_ranges (list[list[int]]): list of pairs of floats from 0 to 24 
             (outage start and stop respectively).
     """
-    for r in ranges:
+    for r in time_ranges:
         (h_from, m_from), (h_to, m_to) = divmod(r[0], 1), divmod(r[1], 1)
         print(f"{h_from:02.0f}:{60 * m_from:02.0f} - {h_to:02.0f}:{60 * m_to:02.0f}")
 
 
-def print_lines(ranges, line_num=-1, subline_num=-1):
-    selected_lines = [*range(0, LINES)] if line_num == -1 else [line_num]
-    selected_sublines = [*range(0, SUBLINES)] if subline_num == -1 else [subline_num]
+def print_lines(schedule, line_num=None, subline_num=None):
+    selected_lines = [*range(0, LINES)] if line_num is None else [line_num]
+    selected_sublines = [*range(0, SUBLINES)] if subline_num is None else [subline_num]
 
     for i in selected_lines:
         for j in selected_sublines:
             print(f"{i+1} черга {j+1} підчерга:")
             with IndentPrint():
-                print_schedule(ranges[i*SUBLINES + j])
+                print_time_ranges(schedule[i*SUBLINES + j])
 
+def print_schedule(schedule, date, line, subline, inverted=False):
 
-def main():
+    # Accept the Switch->On state as an On->On state
+    # and Switch->Off as an Off->Off
+    # Consider only one Switch state in between On/Off states
+    sched = copy.deepcopy(schedule)
+    for qu in sched:
+        for i in range(len(qu)-1):
+            if qu[i] == PowerState.Switch and qu[i+1] != PowerState.Switch:
+                qu[i] = qu[i+1]
+
+    if inverted:
+        def invert_state(s):
+            return {
+                PowerState.On: PowerState.Off,
+                PowerState.Off: PowerState.On, 
+                PowerState.Switch: PowerState.Switch}[s]
+        sched = [[invert_state(v) for v in qu] for qu in sched]
+
+    print (f"Відключення електроенергії за {date}")
+    with IndentPrint():
+        print_lines(get_ranges(sched), line, subline)
+
+def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--line", 
@@ -98,60 +120,45 @@ def main():
         action='store_true',
         default=False)
 
-    args = parser.parse_args()
- 
-    sel_line = -1
-    sel_subline = -1
-    date = args.date
-    if args.line is not None:
-        sel_line = args.line - 1
-    if args.subline  is not None:
-        sel_subline = args.subline - 1
-    if args.tomorrow:
-        date += datetime.timedelta(days=1)
+    return parser.parse_args()
+
+def fetch_schedule(date):
     try:
        text = fetch_schedule_html(date)
     except Exception as e:
         print(f"Не вдалося завантажити дані: {e}")
-        return
+        exit(1)
     try:
-        raw_data = parse_schedule(text)
+        sched = parse_schedule(text)
+        return sched
     except Exception as e:
         print("Помилка обробки даних")
         with IndentPrint():
             print(e)
             print(text)
-        return
+        exit(2)
 
-    sched = copy.deepcopy(raw_data)
-    # Accept the Switch->On state as an On->On state
-    # and Switch->Off as an Off->Off
-    # Consider only one Switch state in between On/Off states
-    for qu in sched:
-        for i in range(len(qu)-1):
-            if qu[i] == PowerState.Switch and qu[i+1] != PowerState.Switch:
-                qu[i] = qu[i+1]
 
-    if args.inverted:
-        def invert_state(s):
-            return {
-                PowerState.On: PowerState.Off,
-                PowerState.Off: PowerState.On, 
-                PowerState.Switch: PowerState.Switch}[s]
-        sched = [[invert_state(v) for v in qu] for qu in sched]
+def main():
 
-    ranges = get_ranges(sched)
+    args = parse_args()
 
-    print (f"Відключення електроенергії за {date}")
-    with IndentPrint():
-        print_lines(ranges, sel_line, sel_subline)
+    date = args.date
+    if args.tomorrow:
+        date += datetime.timedelta(days=1)
+    if args.line is not None:
+        args.line -= 1
+    if args.subline is not None:
+        args.subline -= 1
+
+    schedule = fetch_schedule(date)
+
+    print_schedule(schedule, date, arg.line, arg.subline, arg.inverted)
 
     if args.show_plot:
         if args.subline is None or args.line is None:
             raise Exception("To show a plot specify line and subline numbers")
-        line = args.line - 1
-        subline = args.subline - 1
-        polar_plot.show_schedule(line, subline, raw_data)
+        polar_plot.show_schedule(args.line, args.subline, schedule)
 
 
 if __name__ == '__main__':

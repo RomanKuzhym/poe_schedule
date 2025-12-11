@@ -17,14 +17,14 @@ def plot12hours(ax, schedule, title='', timeinit=0):
     # Convert hours to radians for the polar plot
     angles = (hours / 24) * 2 * np.pi
 
-    reds = values == 0
-    yellows = values == 1
-    blues = values == 2
+    off = values == 0
+    switching = values == 1
+    on = values == 2
 
     # Plot the data as bars
-    ax.bar(angles, reds, width=2 * np.pi / 24, align='edge', alpha=0.75, color='#010621')
-    ax.bar(angles, yellows, width=2 * np.pi / 24, align='edge', alpha=0.75, color='grey')
-    ax.bar(angles, blues, width=2 * np.pi / 24, align='edge', alpha=0.75, color='yellow')
+    ax.bar(angles, off, width=2 * np.pi / 24, align='edge', alpha=0.75, color='#010621')
+    ax.bar(angles, switching, width=2 * np.pi / 24, align='edge', alpha=0.75, color='#967423')
+    ax.bar(angles, on, width=2 * np.pi / 24, align='edge', alpha=0.75, color='#ffb300')
 
     ax.set_xticks(angles)
     ax.set_xticklabels([f"{int(hour/2) + timeinit}:{'00' if hour % 2 ==0 else '30'}" for hour in hours])
