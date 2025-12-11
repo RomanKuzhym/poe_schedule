@@ -3,7 +3,7 @@ import datetime
 import argparse
 import polar_plot
 from poe_parse import PowerState, LINES, SUBLINES, parse as parse_schedule
-import indentprint
+from indentprint import IndentPrint
 
 def fetch_schedule_html(date) -> str:
     URL = "https://www.poe.pl.ua/customs/newgpv-info.php"
