@@ -30,95 +30,88 @@ def fetch_schedule_html(date) -> str:
     resp.raise_for_status()
     return resp.text
 
+
 def parse(html_content) -> list[list[PS]]:
+    """
+    Parse the HTML table from the POE site and return a schedule
+    as a list of lists of PowerState values.
+    """
     soup = BeautifulSoup(html_content, 'html.parser')
     table = soup.find('table', class_='turnoff-scheduleui-table')
+    if table is None:
+        raise ValueError("Cannot find schedule table in HTML")
+
+    tbody = table.find('tbody')
+    if tbody is None:
+        raise ValueError("Cannot find tbody in schedule table")
 
     TITLE_CLASSES = {"turnoff-scheduleui-table-queue", "turnoff-scheduleui-table-subqueue"}
-    ONOFF_MAP = {
-        'light_1': PS.On,
-        'light_2': PS.Off,
-        'light_3': PS.Switch
-    }
+    ONOFF_MAP = {'light_1': PS.On, 'light_2': PS.Off, 'light_3': PS.Switch}
 
-    table_body = table.find('tbody')
-    if table_body is None:
-        raise Exception("Failed to find tbody")
+    rows: list[list[PS]] = []
 
-    rows = []
-
-    for row_idx, tr in enumerate(table_body.find_all('tr')):
-        row = []
+    for row_idx, tr in enumerate(tbody.find_all('tr')):
         try:
-            for td in tr.find_all('td'):
-                cell_classes = set(c.strip() for c in td.get('class', []))
+            line = [
+                ONOFF_MAP[next(c for c in td.get('class', []) if c in ONOFF_MAP)]
+                for td in tr.find_all('td')
+                if not any(c in TITLE_CLASSES for c in td.get('class', []))
+            ]
 
-                # Skip titles
-                if cell_classes & TITLE_CLASSES:
-                    continue
+            if len(line) != 24 * 2:
+                raise ValueError(f"Time series must have 48 values, got {len(line)}")
 
-                onoff = next((ONOFF_MAP[c] for c in cell_classes if c in ONOFF_MAP), None)
-                if onoff is None:
-                    raise Exception(f"Cannot recognize cell type. Classes: {cell_classes}")
-
-                row.append(onoff)
-
-            if len(row) != 24 * 2:
-                raise Exception("Failed to recognize time series. Must be 24 * 2 values")
-            rows.append(row)
+            rows.append(line)
 
         except Exception as e:
-            log.exception(f"Failed to parse a time row #{row_idx}: {e}")
+            log.error(f"Failed to parse row #{row_idx}: {e}")
             continue
 
     if len(rows) != LINES * SUBLINES:
-        log.warning(f"Unexpected number of power lines and sublines: {len(rows)}")
-        log.warning(f"Expected number: {LINES}*{SUBLINES}={LINES*SUBLINES}")
+        log.warning(f"Unexpected number of rows: {len(rows)} (expected {LINES}*{SUBLINES}={LINES*SUBLINES})")
 
     return rows
 
 
 def inverted_sched(schedule):
-    '''
-        Returns a schedule with inverted On/Off values. 
-    '''
-    def invert_state(s):
-        return {
-            PS.On: PS.Off,
-            PS.Off: PS.On, 
-            PS.Switch: PS.Switch}[s]
-    return [[invert_state(v) for v in qu] for qu in schedule]
+    """
+    Return a new schedule with On/Off values inverted. Switch stays the same.
+    """
+    invert_map = {PS.On: PS.Off, PS.Off: PS.On, PS.Switch: PS.Switch}
+    return [[invert_map[state] for state in line] for line in schedule]
 
 
+def get_ranges(schedule, invert=False):
+    """
+    Convert a schedule of PowerState into a list of on/off ranges per line/subline.
+    Each range is [start_hour, end_hour].
+    """
+    sched = inverted_sched(schedule) if invert else deepcopy(schedule)
+    
+    # Normalize Switch states: treat Switch as the next state
+    for line in sched:
+        for i in range(len(line) - 1):
+            if line[i] == PS.Switch:
+                line[i] = line[i + 1]
 
-def get_ranges(sched, invert):
+    all_ranges = []
 
-    # Accept the Switch->On state as an On->On state
-    # and Switch->Off as an Off->Off
-    # Consider only one Switch state in between On/Off states
-    sched = inverted_sched(sched) if invert else deepcopy(sched)
-    for qu in sched:
-        for i in range(len(qu)-1):
-            if qu[i] == PS.Switch:
-                qu[i] = qu[i+1]
+    for line in sched:
+        line_ranges = []
+        start = None
+        for idx, state in enumerate(line):
+            hour = idx * 0.5
+            if state == PS.Off and start is None:
+                start = hour
+            elif state == PS.On and start is not None:
+                line_ranges.append([start, hour])
+                start = None
 
-    ranges = []
-    for qu in range (LINES * SUBLINES):
-        prevstep = sched[qu][0]
-        rangestart = 0
-        rg = []
-        for i, timestep in enumerate(sched[qu]):
-            if prevstep == PS.On and timestep == PS.Off:
-                rangestart = i * 0.5
-                prevstep = PS.Off
-            elif prevstep == PS.Off and timestep == PS.On:
-                prevstep = PS.On
-                rangestop = i * 0.5
-                rg.append([rangestart, rangestop])
-        # off until 24:00
-        if prevstep == PS.Off:
-            rg.append([rangestart, 24])
+        # If the line ends while Off, extend to 24:00
+        if start is not None:
+            line_ranges.append([start, 24])
 
-        ranges.append(rg)
+        all_ranges.append(line_ranges)
 
-    return ranges
+    return all_ranges
+

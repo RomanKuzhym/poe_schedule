@@ -1,10 +1,13 @@
 import argparse
 import copy
 import datetime
+import logging
 
 import polar_plot
 import poe
 from poe_print import print_schedule
+
+log = logging.getLogger(__name__)
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -53,14 +56,16 @@ def fetch_schedule(date):
         sched = poe.parse(text)
         return sched
     except Exception as e:
-        log.error("Помилка обробки даних")
-        with IndentPrint():
-            log.error(e)
-            log.error(text)
+        log.error(f"Помилка обробки даних: {e}")
+        log.error(f"{text!r}")
         exit(2)
 
 
 def main():
+    logging.basicConfig(
+        level=logging.INFO,
+        format='[%(levelname)s]: %(message)s'
+    )
 
     args = parse_args()
 
