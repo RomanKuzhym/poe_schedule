@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from poe_parse import LINES, SUBLINES
+from poe import LINES, SUBLINES
 
 def plot12hours(ax, schedule, title='', timeinit=0):
 
