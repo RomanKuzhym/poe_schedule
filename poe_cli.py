@@ -5,7 +5,8 @@ import logging
 
 import polar_plot
 import poe
-from poe_print import print_schedule
+from poe_print import print_lines
+from indentprint import IndentPrint
 
 log = logging.getLogger(__name__)
 
@@ -24,22 +25,22 @@ def parse_args():
         choices=range(1, poe.SUBLINES+1))
     parser.add_argument(
         "--date", 
-        help="Дата РРРР-ММ-ДД",
+        help="Дата РРРР-ММ-ДД. За замовчуванням -- поточна дата",
         type=lambda s: datetime.datetime.strptime(s, '%Y-%m-%d'), 
         default=datetime.datetime.now().date())
     parser.add_argument(
-        "--invert", 
-        help="Показувати графік увімкнення", 
+        "--outages", 
+        help="Показувати графік вимкнення замість увімкнення", 
         action='store_true',
         default=False)
     parser.add_argument(
-        "--show_plot", 
+        "--showplot", 
         help="Діаграма", 
         action='store_true',
         default=False)
     parser.add_argument(
         "--tomorrow",
-        help="Графік на завтра від заданої дати",
+        help="Графік на завтра (або на наступний день від заданої дати)",
         action='store_true',
         default=False)
 
@@ -79,9 +80,12 @@ def main():
         args.subline -= 1
 
     schedule = fetch_schedule(date)
+    print (f"{'Відключення' if args.outages else 'Увімкнення'} електроенергії за {date}")
+    with IndentPrint():
+        sched_ranges = poe.get_ranges(schedule, not args.outages)
+        print_lines(sched_ranges, args.line, args.subline)
 
-    print_schedule(poe.get_ranges(schedule, args.invert), date, args.line, args.subline)
-    if args.show_plot:
+    if args.showplot:
         if args.subline is None or args.line is None:
             raise Exception("To show a plot specify line and subline numbers")
         polar_plot.show_schedule(args.line, args.subline, schedule)

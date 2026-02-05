@@ -23,9 +23,3 @@ def print_lines(schedule, line_num=None, subline_num=None):
             with IndentPrint():
                 print_time_ranges(schedule[i*SUBLINES + j])
 
-
-def print_schedule(time_ranges, date, line, subline):
-
-    print (f"Відключення електроенергії за {date}")
-    with IndentPrint():
-        print_lines(time_ranges, line, subline)
