@@ -85,7 +85,7 @@ def main():
         args.subline -= 1
 
     schedule = fetch_schedule(date)
-    print (f"{'Відключення' if args.outages else 'Увімкнення'} електроенергії за {date}")
+    print (f"{'Вимкнення' if args.outages else 'Увімкнення'} електроенергії за {date}")
     with IndentPrint():
         sched_ranges = poe.get_ranges(schedule, not args.outages)
         print_lines(sched_ranges, args.line, args.subline)
