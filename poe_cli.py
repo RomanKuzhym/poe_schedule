@@ -1,6 +1,6 @@
 import argparse
 import copy
-import datetime
+from datetime import datetime
 import logging
 
 import polar_plot
@@ -26,8 +26,8 @@ def parse_args():
     parser.add_argument(
         "--date", 
         help="Дата РРРР-ММ-ДД. За замовчуванням -- поточна дата",
-        type=lambda s: datetime.datetime.strptime(s, '%Y-%m-%d'), 
-        default=datetime.datetime.now().date())
+        type=lambda s: datetime.strptime(s, '%Y-%m-%d'), 
+        default=datetime.now().date())
     parser.add_argument(
         "--outages", 
         help="Показувати графік вимкнення замість увімкнення", 
@@ -41,6 +41,11 @@ def parse_args():
     parser.add_argument(
         "--tomorrow",
         help="Графік на завтра (або на наступний день від заданої дати)",
+        action='store_true',
+        default=False)
+    parser.add_argument(
+        "--plottime",
+        help="Відображати поточний час на діаграмі",
         action='store_true',
         default=False)
 
@@ -88,7 +93,11 @@ def main():
     if args.showplot:
         if args.subline is None or args.line is None:
             raise Exception("To show a plot specify line and subline numbers")
-        polar_plot.show_schedule(args.line, args.subline, schedule)
+        polar_plot.show_schedule(
+            args.line,
+            args.subline,
+            schedule,
+            datetime.now().time() if args.plottime else None)
 
 
 if __name__ == '__main__':
