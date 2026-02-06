@@ -56,7 +56,9 @@ def plot12hours(ax, schedule, title='', timeinit=0):
     plot_uniform_ticks(ax, QUATER_HRS, [-0.4, -0.1], color='slategrey', linewidth=2)
 
     ax.set_xticks(angles)
-    ax.set_xticklabels([f"{int(hour/2) + timeinit}" if hour % 2 ==0 else "" for hour in hours])
+    ticklabels = [f"{int(hour/2) + timeinit}" if hour % 2 == 0 else "" for hour in hours]
+    ticklabels[0] = 12
+    ax.set_xticklabels(ticklabels)
     ax.grid(False)
     
     ax.set_title(title)
@@ -69,7 +71,7 @@ def show_schedule(line, subline, raw_sched, clocktime=None):
     idx = line * SUBLINES + subline
     plt.rcParams.update({'font.size': 8, 'font.weight': 'bold', 'text.color' : 'darkslategrey'})
     fig, ax = plt.subplots(1, 2, subplot_kw={'projection': 'polar'})
-    fig.suptitle(f"{line + 1} черга {subline+1} підчерга")
+    fig.suptitle(f"{line + 1} черга {subline+1} підчерга", fontsize=14)
 
     plot12hours(ax[0], raw_sched[idx][:24])
     plot12hours(ax[1], raw_sched[idx][24:])
@@ -82,9 +84,9 @@ def show_schedule(line, subline, raw_sched, clocktime=None):
         M_THICKNESS = 1
         OUTLINE = 0.5
         # plot twise to add an outline
-        plot_clock(ax[[0, 1][clocktime.hour <=12]], clocktime.hour, clocktime.minute,
+        plot_clock(ax[[0, 1][clocktime.hour > 12]], clocktime.hour, clocktime.minute,
             H_THICKNESS + 2 * OUTLINE, M_THICKNESS + 2 * OUTLINE, 'black', 'black')
-        plot_clock(ax[[0, 1][clocktime.hour <=12]], clocktime.hour, clocktime.minute,
+        plot_clock(ax[[0, 1][clocktime.hour > 12]], clocktime.hour, clocktime.minute,
             H_THICKNESS, M_THICKNESS, 'lightcoral', 'white')
 
     ax[0].text(0, -3, "AM", ha='center', va='center', fontsize=14,
@@ -93,3 +95,4 @@ def show_schedule(line, subline, raw_sched, clocktime=None):
         path_effects=[pe.withStroke(linewidth=1, foreground='lightgrey')])
     plt.tight_layout()
     plt.show()
+
