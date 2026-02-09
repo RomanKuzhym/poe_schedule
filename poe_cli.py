@@ -1,6 +1,6 @@
 import argparse
 import copy
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 
 import polar_plot
@@ -44,7 +44,7 @@ def parse_args():
         action='store_true',
         default=False)
     parser.add_argument(
-        "--plottime",
+        "--clock",
         help="Відображати поточний час на діаграмі",
         action='store_true',
         default=False)
@@ -77,7 +77,7 @@ def main():
 
     date = args.date
     if args.tomorrow:
-        date += datetime.timedelta(days=1)
+        date += timedelta(days=1)
     # adapt to [0, LINES/SUBLINES) range
     if args.line is not None:
         args.line -= 1
@@ -97,7 +97,7 @@ def main():
             args.line,
             args.subline,
             schedule,
-            datetime.now().time() if args.plottime else None)
+            datetime.now().time() if args.clock else None)
 
 
 if __name__ == '__main__':
