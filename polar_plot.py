@@ -1,3 +1,4 @@
+import os
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as pe
 import numpy as np
@@ -67,7 +68,7 @@ def plot12hours(ax, schedule, title='', timeinit=0):
 
     plt.draw()
 
-def show_schedule(line, subline, raw_sched, clocktime=None):
+def generate_plot(line, subline, raw_sched, clocktime=None):
     idx = line * SUBLINES + subline
     plt.rcParams.update({'font.size': 8, 'font.weight': 'bold', 'text.color' : 'darkslategrey'})
     fig, ax = plt.subplots(1, 2, subplot_kw={'projection': 'polar'})
@@ -94,5 +95,13 @@ def show_schedule(line, subline, raw_sched, clocktime=None):
     ax[1].text(0, -3, "PM", ha='center', va='center', fontsize=14,
         path_effects=[pe.withStroke(linewidth=1, foreground='lightgrey')])
     plt.tight_layout()
+
+def show_plot():
     plt.show()
+
+def write_plot(outpath: str):
+    with open(outpath, 'w') as f:
+        if not f.writable():
+            raise Exception(f"Cannot save the plot to {outpath}")
+    plt.savefig(outpath)
 

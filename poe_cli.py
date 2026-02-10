@@ -34,11 +34,6 @@ def parse_args():
         action='store_true',
         default=False)
     parser.add_argument(
-        "--showplot", 
-        help="Діаграма", 
-        action='store_true',
-        default=False)
-    parser.add_argument(
         "--tomorrow",
         help="Графік на завтра (або на наступний день від заданої дати)",
         action='store_true',
@@ -48,6 +43,16 @@ def parse_args():
         help="Відображати у вигляді простого рядка, без дати та переносів",
         action='store_true',
         default=False)
+    parser.add_argument(
+        "--showplot", 
+        help="Показати діаграму", 
+        action='store_true',
+        default=False)
+    parser.add_argument(
+        "--outplot", 
+        help="Зберегти діаграму. Увага!! Файл завжди перезаписується!", 
+        type=str,
+        default=None)
     parser.add_argument(
         "--clock",
         help="Відображати поточний час на діаграмі",
@@ -91,7 +96,7 @@ def main():
 
     schedule = fetch_schedule(date)
     sched_ranges = poe.get_ranges(schedule, not args.outages)
-    if args.singleline:
+    if args.oneline:
         if args.subline is None or args.line is None:
             raise Exception("To show a plot specify line and subline numbers")
         print_time_ranges_oneline(sched_ranges, args.line, args.subline)
@@ -100,15 +105,20 @@ def main():
         with IndentPrint():
             print_lines(sched_ranges, args.line, args.subline)
 
-    if args.showplot:
+    if args.showplot or args.outplot:
         if args.subline is None or args.line is None:
             raise Exception("To show a plot specify line and subline numbers")
-        polar_plot.show_schedule(
+        polar_plot.generate_plot(
             args.line,
             args.subline,
             schedule,
             datetime.now().time() if args.clock else None)
 
+    if args.outplot is not None:
+        polar_plot.write_plot(args.outplot)
+
+    if args.showplot:
+        polar_plot.show_plot()
 
 if __name__ == '__main__':
     main()
