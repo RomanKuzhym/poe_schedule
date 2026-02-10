@@ -5,7 +5,7 @@ import logging
 
 import polar_plot
 import poe
-from poe_print import print_lines
+from poe_print import print_lines, print_time_ranges_oneline
 from indentprint import IndentPrint
 
 log = logging.getLogger(__name__)
@@ -41,6 +41,11 @@ def parse_args():
     parser.add_argument(
         "--tomorrow",
         help="Графік на завтра (або на наступний день від заданої дати)",
+        action='store_true',
+        default=False)
+    parser.add_argument(
+        "--oneline",
+        help="Відображати у вигляді простого рядка, без дати та переносів",
         action='store_true',
         default=False)
     parser.add_argument(
@@ -85,10 +90,15 @@ def main():
         args.subline -= 1
 
     schedule = fetch_schedule(date)
-    print (f"{'Вимкнення' if args.outages else 'Увімкнення'} електроенергії за {date}")
-    with IndentPrint():
-        sched_ranges = poe.get_ranges(schedule, not args.outages)
-        print_lines(sched_ranges, args.line, args.subline)
+    sched_ranges = poe.get_ranges(schedule, not args.outages)
+    if args.singleline:
+        if args.subline is None or args.line is None:
+            raise Exception("To show a plot specify line and subline numbers")
+        print_time_ranges_oneline(sched_ranges, args.line, args.subline)
+    else:
+        print (f"{'Вимкнення' if args.outages else 'Увімкнення'} електроенергії за {date}")
+        with IndentPrint():
+            print_lines(sched_ranges, args.line, args.subline)
 
     if args.showplot:
         if args.subline is None or args.line is None:

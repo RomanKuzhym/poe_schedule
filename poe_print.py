@@ -1,7 +1,6 @@
 from indentprint import IndentPrint
 from poe import LINES, SUBLINES
 
-
 def print_time_ranges(time_ranges):
     """Print one schedule for a subline.
     Args:
@@ -12,6 +11,12 @@ def print_time_ranges(time_ranges):
         (h_from, m_from), (h_to, m_to) = divmod(r[0], 1), divmod(r[1], 1)
         print(f"{h_from:02.0f}:{60 * m_from:02.0f} - {h_to:02.0f}:{60 * m_to:02.0f}")
 
+def print_time_ranges_oneline(schedule, line_num, subline_num):
+    formatted = []
+    for r in schedule[line_num * SUBLINES + subline_num]:
+        (h_from, m_from), (h_to, m_to) = divmod(r[0], 1), divmod(r[1], 1)
+        formatted.append(f"{h_from:02.0f}:{60 * m_from:02.0f} - {h_to:02.0f}:{60 * m_to:02.0f}")
+    print("| " + " | ".join(formatted) + " |")
 
 def print_lines(schedule, line_num=None, subline_num=None):
     selected_lines = [*range(0, LINES)] if line_num is None else [line_num]
