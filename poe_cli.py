@@ -7,6 +7,7 @@ import polar_plot
 import poe
 from poe_print import print_lines, print_time_ranges_oneline
 from indentprint import IndentPrint
+from date_helper import MONTHS
 
 log = logging.getLogger(__name__)
 
@@ -108,11 +109,11 @@ def main():
     if args.showplot or args.outplot:
         if args.subline is None or args.line is None:
             raise Exception("To show a plot specify line and subline numbers")
-        polar_plot.generate_plot(
-            args.line,
-            args.subline,
-            schedule,
-            datetime.now().time() if args.clock else None)
+
+        plot_title = f"{args.line + 1} черга {args.subline + 1} підчерга станом на {date.day} {MONTHS[date.month]}"
+        line_schedule = schedule[args.line * poe.SUBLINES + args.subline]
+        plot_clock = datetime.now().time() if args.clock else None
+        polar_plot.generate_plot(plot_title, line_schedule, plot_clock)
 
     if args.outplot is not None:
         polar_plot.write_plot(args.outplot)

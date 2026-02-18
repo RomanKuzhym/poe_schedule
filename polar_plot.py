@@ -4,8 +4,6 @@ import matplotlib.patheffects as pe
 import numpy as np
 from datetime import time
 
-from poe import LINES, SUBLINES
-
 
 def plot_uniform_ticks(ax, count, radius = [0, 1], color = 'black', linewidth=1):
     for a in range(count):
@@ -68,14 +66,13 @@ def plot12hours(ax, schedule, title='', timeinit=0):
 
     plt.draw()
 
-def generate_plot(line, subline, raw_sched, clocktime=None):
-    idx = line * SUBLINES + subline
+def generate_plot(title, sched, clocktime=None):
     plt.rcParams.update({'font.size': 8, 'font.weight': 'bold', 'text.color' : 'darkslategrey'})
     fig, ax = plt.subplots(1, 2, subplot_kw={'projection': 'polar'})
-    fig.suptitle(f"{line + 1} черга {subline+1} підчерга", fontsize=14)
+    fig.suptitle(title, fontsize=14)
 
-    plot12hours(ax[0], raw_sched[idx][:24])
-    plot12hours(ax[1], raw_sched[idx][24:])
+    plot12hours(ax[0], sched[:24])
+    plot12hours(ax[1], sched[24:])
 
     if clocktime:
         if type(clocktime) is not time:
