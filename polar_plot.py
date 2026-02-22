@@ -81,10 +81,14 @@ def generate_plot(title, sched, clocktime=None):
         H_THICKNESS = 3
         M_THICKNESS = 1
         OUTLINE = 0.5
+        
+        minutes24h = clocktime.hour * 60 + clocktime.minute
+        pastmidday = minutes24h > 12 * 60
+        clock_ax = ax[[0, 1][pastmidday]]
         # plot twise to add an outline
-        plot_clock(ax[[0, 1][clocktime.hour > 12]], clocktime.hour, clocktime.minute,
+        plot_clock(clock_ax, clocktime.hour, clocktime.minute,
             H_THICKNESS + 2 * OUTLINE, M_THICKNESS + 2 * OUTLINE, 'black', 'black')
-        plot_clock(ax[[0, 1][clocktime.hour > 12]], clocktime.hour, clocktime.minute,
+        plot_clock(clock_ax, clocktime.hour, clocktime.minute,
             H_THICKNESS, M_THICKNESS, 'lightcoral', 'white')
 
     ax[0].text(0, -3, "AM", ha='center', va='center', fontsize=14,
