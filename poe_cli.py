@@ -110,7 +110,7 @@ def main():
         if args.subline is None or args.line is None:
             raise Exception("To show a plot specify line and subline numbers")
 
-        plot_title = f"{args.line + 1} черга {args.subline + 1} підчерга станом на {date.day} {MONTHS[date.month]}"
+        plot_title = f"{args.line + 1} черга {args.subline + 1} підчерга станом на {date.day} {MONTHS[date.month-1]}"
         line_schedule = schedule[args.line * poe.SUBLINES + args.subline]
         plot_clock = datetime.now().time() if args.clock else None
         polar_plot.generate_plot(plot_title, line_schedule, plot_clock)
